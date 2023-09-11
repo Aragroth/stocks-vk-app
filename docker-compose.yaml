@@ -1,0 +1,50 @@
+version: "3.7"
+
+services:
+    frontend:
+        build:
+            context: ./stocks-app
+        container_name: vk-stocks-frontend-nginx
+        volumes:
+            - ./nginx.conf:/etc/nginx/nginx.conf
+            - nginx-logs:/var/log/nginx/
+        labels:
+            - traefik.enable=true
+            - traefik.http.routers.vk-stocks-nginx.rule=Host(`stocks.newspace.press`)
+
+            - traefik.http.routers.vk-stocks-nginx.tls.certresolver=letsEncrypt
+            - traefik.http.routers.vk-stocks-nginx.entrypoints=secureweb
+            - traefik.http.services.vk-stocks-nginx.loadbalancer.server.port=80
+
+        restart: on-failure
+        networks:
+            - traefik
+
+    backend:
+        build:
+            context: ./stocks-backend
+        container_name: vk-stocks-backend-fastapi
+        labels:
+            - traefik.enable=true
+            - traefik.http.routers.vk-stocks-uvicorn.rule=Host(`stocks.newspace.press`) && PathPrefix(`/api`)
+            - traefik.http.routers.vk-stocks-uvicorn.tls.certresolver=letsEncrypt
+            - traefik.http.routers.vk-stocks-uvicorn.entrypoints=secureweb
+
+            - traefik.http.routers.vk-stocks-uvicorn.middlewares=vk-stocks-clear-prefix
+            - traefik.http.middlewares.vk-stocks-clear-prefix.stripprefix.prefixes=/api
+            - traefik.http.middlewares.vk-stocks-clear-prefix.stripprefix.forceSlash=true
+
+        restart: on-failure
+        networks:
+            - traefik
+
+
+
+volumes:
+    nginx-logs:
+
+networks:
+    traefik:
+        external:
+            name: traefik_global
+

@@ -1,0 +1,22 @@
+version: '3'
+
+services:
+
+    reverse-proxy:
+        image: traefik:v2.4
+        ports:
+            - 80:80
+            - 443:443
+            - 8080:8080
+        volumes:
+            - /etc/localtime:/etc/localtime:ro
+            - ./traefik/traefik.yaml:/traefik.yaml:ro
+            - ./traefik/dashboard.yaml:/traefik/dashboard.yaml:ro
+            - /var/run/docker.sock:/var/run/docker.sock:ro
+        networks:
+            - traefik
+
+networks:
+  traefik:
+    name: traefik_global
+    driver: bridge
